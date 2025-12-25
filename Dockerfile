@@ -9,14 +9,16 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o app ./cmd/api
 
 
-FROM gcr.io/distroless/base-debian12
+FROM alpine:3.20
 
 WORKDIR /app
+
+RUN adduser -D appuser
 
 COPY --from=builder /app/app /app/app
 
 EXPOSE 8080
 
-USER nonroot:nonroot
+USER appuser
 
 ENTRYPOINT ["/app/app"]
