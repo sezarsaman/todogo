@@ -2,11 +2,16 @@ package main
 
 import (
 	"context"
+	"time"
 
 	"task-manager/internal/config"
 	"task-manager/internal/platform/cache"
 	"task-manager/internal/platform/database"
 	httpPlatform "task-manager/internal/platform/http"
+	taskCache "task-manager/internal/task/cache"
+	"task-manager/internal/task/handler"
+	"task-manager/internal/task/repository"
+	"task-manager/internal/task/service"
 	"task-manager/pkg/shutdown"
 )
 
@@ -22,12 +27,18 @@ func main() {
 	}
 	defer db.Conn.Close(ctx)
 
-	_, err = cache.New(cfg.RedisHost + ":" + cfg.RedisPort)
+	redisPlatform, err := cache.New(cfg.RedisHost + ":" + cfg.RedisPort)
 	if err != nil {
 		panic(err)
 	}
 
-	router := httpPlatform.NewRouter()
+	taskRedisCache := taskCache.NewRedis(redisPlatform.Client, 30*time.Second)
+
+	taskRepo := repository.NewPostgres(db.Conn)
+	taskService := service.New(taskRepo, taskRedisCache)
+	taskHandler := handler.New(taskService)
+
+	router := httpPlatform.NewRouter(taskHandler)
 
 	go shutdown.Wait(ctx, cancel)
 
