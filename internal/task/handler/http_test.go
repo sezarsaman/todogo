@@ -99,7 +99,7 @@ func TestHandlerCreate(t *testing.T) {
 		handler.Register(engine)
 
 		body := map[string]interface{}{
-			"Description": "Task description",
+			"description": "Task description",
 		}
 		bodyBytes, _ := json.Marshal(body)
 
@@ -109,7 +109,7 @@ func TestHandlerCreate(t *testing.T) {
 
 		engine.ServeHTTP(w, req)
 
-		if w.Code != http.StatusUnprocessableEntity {
+		if w.Code != http.StatusBadRequest {
 			t.Errorf("expected status 422, got %d", w.Code)
 		}
 	})

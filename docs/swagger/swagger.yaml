@@ -1,0 +1,216 @@
+basePath: /
+definitions:
+  handler.CreateTaskRequest:
+    properties:
+      assignee:
+        example: john.doe@example.com
+        type: string
+      description:
+        example: Buy milk, eggs, and bread
+        type: string
+      status:
+        default: pending
+        example: pending
+        type: string
+      title:
+        example: Buy groceries
+        type: string
+    type: object
+  handler.ErrorResponse:
+    properties:
+      error:
+        example: title is required
+        type: string
+    type: object
+  model.Task:
+    properties:
+      assignee:
+        example: john.doe@example.com
+        type: string
+      created_at:
+        example: "2024-12-26T10:30:00Z"
+        type: string
+      description:
+        example: Buy milk, eggs, and bread
+        type: string
+      id:
+        example: 1
+        type: integer
+      status:
+        default: pending
+        example: pending
+        type: string
+      title:
+        example: Buy groceries
+        type: string
+      updated_at:
+        example: "2024-12-26T10:30:00Z"
+        type: string
+    required:
+    - title
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: A simple task management API with CRUD operations
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Task Manager API
+  version: "1.0"
+paths:
+  /tasks:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all tasks
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of tasks
+          schema:
+            items:
+              $ref: '#/definitions/model.Task'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: List all tasks
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      description: Create a new task with title, description, status, and assignee
+      parameters:
+      - description: Task request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Task created successfully
+          schema:
+            $ref: '#/definitions/model.Task'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Create a new task
+      tags:
+      - tasks
+  /tasks/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a task by its ID
+      parameters:
+      - description: Task ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Task deleted successfully
+        "400":
+          description: Invalid task ID
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Delete a task
+      tags:
+      - tasks
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific task by its ID
+      parameters:
+      - description: Task ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task details
+          schema:
+            $ref: '#/definitions/model.Task'
+        "400":
+          description: Invalid task ID
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Get a task by ID
+      tags:
+      - tasks
+    put:
+      consumes:
+      - application/json
+      description: Update an existing task by ID
+      parameters:
+      - description: Task ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated task data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Task updated successfully
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Update a task
+      tags:
+      - tasks
+schemes:
+- http
+swagger: "2.0"

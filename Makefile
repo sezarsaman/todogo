@@ -17,6 +17,7 @@ init:
 	$(COMPOSE) up -d app
 	$(MAKE) migrate
 	$(MAKE) seed
+	$(MAKE) swagger
 	
 	@echo "Initialization complete."
 	@echo "Everything works! You can now run 'make logs' to see the application logs."
