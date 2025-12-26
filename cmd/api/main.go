@@ -18,6 +18,18 @@ import (
 	"task-manager/internal/task/service"
 )
 
+// @title           Task Manager API
+// @version         1.0
+// @description     A simple task management API with CRUD operations
+// @termsOfService  http://swagger.io/terms/
+// @contact.name    API Support
+// @contact.url     http://www.swagger.io/support
+// @contact.email   support@swagger.io
+// @license.name    Apache 2.0
+// @license.url     http://www.apache.org/licenses/LICENSE-2.0.html
+// @host            localhost:8080
+// @BasePath        /
+// @schemes         http
 func main() {
 	cfg := config.Load()
 

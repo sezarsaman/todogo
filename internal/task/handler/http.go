@@ -36,6 +36,42 @@ func (h *Handler) Register(r *gin.Engine) {
 	r.DELETE("/tasks/:id", h.delete)
 }
 
+// CreateTaskRequest represents the request payload for creating a task
+type CreateTaskRequest struct {
+	Title       string `json:"title" example:"Buy groceries"`
+	Description string `json:"description" example:"Buy milk, eggs, and bread"`
+	Status      string `json:"status" example:"pending" default:"pending"`
+	Assignee    string `json:"assignee" example:"john.doe@example.com"`
+}
+
+// TaskResponse represents the response payload for task operations
+type TaskResponse struct {
+	ID          int64  `json:"id" example:"1"`
+	Title       string `json:"title" example:"Buy groceries"`
+	Description string `json:"description" example:"Buy milk, eggs, and bread"`
+	Status      string `json:"status" example:"pending"`
+	Assignee    string `json:"assignee" example:"john.doe@example.com"`
+	CreatedAt   string `json:"created_at" example:"2024-12-26T10:30:00Z"`
+	UpdatedAt   string `json:"updated_at" example:"2024-12-26T10:30:00Z"`
+}
+
+// ErrorResponse represents an error response
+type ErrorResponse struct {
+	Error string `json:"error" example:"title is required"`
+}
+
+// CreateTask godoc
+// @Summary      Create a new task
+// @Description  Create a new task with title, description, status, and assignee
+// @Tags         tasks
+// @Accept       json
+// @Produce      json
+// @Param        request body CreateTaskRequest true "Task request"
+// @Success      201  {object}  model.Task "Task created successfully"
+// @Failure      400  {object}  ErrorResponse "Invalid request"
+// @Failure      422  {object}  ErrorResponse "Validation error"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /tasks [post]
 func (h *Handler) create(c *gin.Context) {
 	var req model.Task
 
@@ -63,6 +99,15 @@ func (h *Handler) create(c *gin.Context) {
 	c.JSON(http.StatusCreated, req)
 }
 
+// ListTasks godoc
+// @Summary      List all tasks
+// @Description  Retrieve a list of all tasks
+// @Tags         tasks
+// @Accept       json
+// @Produce      json
+// @Success      200  {array}   model.Task "List of tasks"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /tasks [get]
 func (h *Handler) list(c *gin.Context) {
 	tasks, err := h.service.List(c.Request.Context())
 	if err != nil {
@@ -72,6 +117,18 @@ func (h *Handler) list(c *gin.Context) {
 	c.JSON(http.StatusOK, tasks)
 }
 
+// GetTask godoc
+// @Summary      Get a task by ID
+// @Description  Retrieve a specific task by its ID
+// @Tags         tasks
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int64  true  "Task ID"
+// @Success      200  {object}  model.Task "Task details"
+// @Failure      400  {object}  ErrorResponse "Invalid task ID"
+// @Failure      404  {object}  ErrorResponse "Task not found"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /tasks/{id} [get]
 func (h *Handler) get(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -88,6 +145,18 @@ func (h *Handler) get(c *gin.Context) {
 	c.JSON(http.StatusOK, task)
 }
 
+// UpdateTask godoc
+// @Summary      Update a task
+// @Description  Update an existing task by ID
+// @Tags         tasks
+// @Accept       json
+// @Produce      json
+// @Param        id       path  int64  true  "Task ID"
+// @Param        request  body  CreateTaskRequest  true  "Updated task data"
+// @Success      202  "Task updated successfully"
+// @Failure      400  {object}  ErrorResponse "Invalid request"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /tasks/{id} [put]
 func (h *Handler) update(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -110,6 +179,17 @@ func (h *Handler) update(c *gin.Context) {
 	c.Status(http.StatusAccepted)
 }
 
+// DeleteTask godoc
+// @Summary      Delete a task
+// @Description  Delete a task by its ID
+// @Tags         tasks
+// @Accept       json
+// @Produce      json
+// @Param        id  path  int64  true  "Task ID"
+// @Success      204  "Task deleted successfully"
+// @Failure      400  {object}  ErrorResponse "Invalid task ID"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /tasks/{id} [delete]
 func (h *Handler) delete(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
