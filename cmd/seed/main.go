@@ -2,10 +2,14 @@ package main
 
 import (
 	"context"
+	"time"
 
 	"task-manager/internal/config"
+	"task-manager/internal/platform/cache"
 	"task-manager/internal/platform/database"
+	taskCache "task-manager/internal/task/cache"
 	"task-manager/internal/task/model"
+	taskRepo "task-manager/internal/task/repository"
 )
 
 func main() {
@@ -56,6 +60,17 @@ func main() {
 		)
 		if err != nil {
 			panic(err)
+		}
+	}
+
+	// After seeding DB, refresh cache if Redis is available
+	if cfg.RedisHost != "" && cfg.RedisPort != "" {
+		if redisPlatform, err := cache.New(cfg.RedisHost + ":" + cfg.RedisPort); err == nil {
+			tcache := taskCache.NewRedis(redisPlatform.Client, 30*time.Second)
+			repo := taskRepo.NewPostgres(db.Conn)
+			if all, err := repo.List(ctx); err == nil {
+				_ = tcache.SetTasks(ctx, all)
+			}
 		}
 	}
 }

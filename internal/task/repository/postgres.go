@@ -36,6 +36,7 @@ func (r *PostgresRepository) GetByID(ctx context.Context, id int64) (*model.Task
 	err := row.Scan(
 		&t.ID,
 		&t.Title,
+		&t.Description,
 		&t.Status,
 		&t.Assignee,
 		&t.CreatedAt,
@@ -64,6 +65,7 @@ func (r *PostgresRepository) List(ctx context.Context) ([]model.Task, error) {
 		if err := rows.Scan(
 			&t.ID,
 			&t.Title,
+			&t.Description,
 			&t.Status,
 			&t.Assignee,
 			&t.CreatedAt,

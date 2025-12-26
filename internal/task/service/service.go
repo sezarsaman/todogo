@@ -17,10 +17,6 @@ func New(repo repository.TaskRepository, cache cache.TaskCache) *Service {
 	return &Service{repo: repo, cache: cache}
 }
 
-func (s *Service) Get(ctx context.Context, id int64) (*model.Task, error) {
-	return s.repo.GetByID(ctx, id)
-}
-
 func (s *Service) List(ctx context.Context) ([]model.Task, error) {
 	if s.cache != nil {
 		if tasks, hit, err := s.cache.GetTasks(ctx); err == nil && hit {
@@ -48,7 +44,13 @@ func (s *Service) Create(ctx context.Context, task *model.Task) error {
 		return err
 	}
 	if s.cache != nil {
-		_ = s.cache.Invalidate(ctx)
+		// Try to update cached list in-place. If cache miss or error, refresh full cache from DB.
+		if tasks, hit, err := s.cache.GetTasks(ctx); err == nil && hit {
+			tasks = append(tasks, *task)
+			_ = s.cache.SetTasks(ctx, tasks)
+		} else if list, err := s.repo.List(ctx); err == nil {
+			_ = s.cache.SetTasks(ctx, list)
+		}
 	}
 	return nil
 }
@@ -58,7 +60,22 @@ func (s *Service) Update(ctx context.Context, task *model.Task) error {
 		return err
 	}
 	if s.cache != nil {
-		_ = s.cache.Invalidate(ctx)
+		if tasks, hit, err := s.cache.GetTasks(ctx); err == nil && hit {
+			updated := false
+			for i := range tasks {
+				if tasks[i].ID == task.ID {
+					tasks[i] = *task
+					updated = true
+					break
+				}
+			}
+			if !updated {
+				tasks = append(tasks, *task)
+			}
+			_ = s.cache.SetTasks(ctx, tasks)
+		} else if list, err := s.repo.List(ctx); err == nil {
+			_ = s.cache.SetTasks(ctx, list)
+		}
 	}
 	return nil
 }
@@ -68,7 +85,44 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 		return err
 	}
 	if s.cache != nil {
-		_ = s.cache.Invalidate(ctx)
+		if tasks, hit, err := s.cache.GetTasks(ctx); err == nil && hit {
+			for i := range tasks {
+				if tasks[i].ID == id {
+					tasks = append(tasks[:i], tasks[i+1:]...)
+					break
+				}
+			}
+			_ = s.cache.SetTasks(ctx, tasks)
+		} else if list, err := s.repo.List(ctx); err == nil {
+			_ = s.cache.SetTasks(ctx, list)
+		}
 	}
 	return nil
+}
+
+func (s *Service) Get(ctx context.Context, id int64) (*model.Task, error) {
+	// Read from DB for authoritative value, but keep cache in sync.
+	t, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if s.cache != nil {
+		if tasks, hit, err := s.cache.GetTasks(ctx); err == nil && hit {
+			updated := false
+			for i := range tasks {
+				if tasks[i].ID == t.ID {
+					tasks[i] = *t
+					updated = true
+					break
+				}
+			}
+			if !updated {
+				tasks = append(tasks, *t)
+			}
+			_ = s.cache.SetTasks(ctx, tasks)
+		} else if list, err := s.repo.List(ctx); err == nil {
+			_ = s.cache.SetTasks(ctx, list)
+		}
+	}
+	return t, nil
 }

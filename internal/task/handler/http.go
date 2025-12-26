@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"task-manager/internal/task/model"
 	"task-manager/internal/task/service"
@@ -28,8 +29,20 @@ func (h *Handler) Register(r *gin.Engine) {
 
 func (h *Handler) create(c *gin.Context) {
 	var req model.Task
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	req.Title = strings.TrimSpace(req.Title)
+	if req.Title == "" {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "title is required"})
+		return
+	}
+
+	if len(req.Title) < 3 {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "title is too short"})
 		return
 	}
 
@@ -44,7 +57,7 @@ func (h *Handler) create(c *gin.Context) {
 func (h *Handler) list(c *gin.Context) {
 	tasks, err := h.service.List(c.Request.Context())
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, tasks)
@@ -85,7 +98,7 @@ func (h *Handler) update(c *gin.Context) {
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	c.Status(http.StatusAccepted)
 }
 
 func (h *Handler) delete(c *gin.Context) {
