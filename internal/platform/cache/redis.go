@@ -11,6 +11,10 @@ type Redis struct {
 	Client *redis.Client
 }
 
+func (r *Redis) Close() any {
+	panic("unimplemented")
+}
+
 func New(addr string) (*Redis, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr: addr,

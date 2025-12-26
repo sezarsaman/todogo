@@ -2,6 +2,10 @@ package main
 
 import (
 	"context"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"task-manager/internal/config"
@@ -12,20 +16,15 @@ import (
 	"task-manager/internal/task/handler"
 	"task-manager/internal/task/repository"
 	"task-manager/internal/task/service"
-	"task-manager/pkg/shutdown"
 )
 
 func main() {
 	cfg := config.Load()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	db, err := database.New(ctx, postgresDSN(cfg))
+	db, err := database.New(context.Background(), postgresDSN(cfg))
 	if err != nil {
 		panic(err)
 	}
-	defer db.Conn.Close(ctx)
 
 	redisPlatform, err := cache.New(cfg.RedisHost + ":" + cfg.RedisPort)
 	if err != nil {
@@ -40,11 +39,27 @@ func main() {
 
 	router := httpPlatform.NewRouter(taskHandler)
 
-	go shutdown.Wait(ctx, cancel)
-
-	if err := router.Run(":" + cfg.HTTPPort); err != nil {
-		panic(err)
+	srv := &http.Server{
+		Addr:    ":" + cfg.HTTPPort,
+		Handler: router,
 	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			panic(err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+
+	_ = srv.Shutdown(shutdownCtx)
+	_ = redisPlatform.Close()
+	_ = db.Conn.Close(context.Background())
 }
 
 func postgresDSN(cfg config.Config) string {
