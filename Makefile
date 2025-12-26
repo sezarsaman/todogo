@@ -13,8 +13,7 @@ set-env:
 init:
 	$(MAKE) set-env
 	$(COMPOSE) build --no-cache
-	$(COMPOSE) up -d postgres redis
-	$(COMPOSE) up -d app
+	$(COMPOSE) up -d
 	$(MAKE) migrate
 	$(MAKE) seed
 	$(MAKE) swagger

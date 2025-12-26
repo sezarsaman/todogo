@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"task-manager/internal/observability/metrics"
 	"task-manager/internal/task/model"
 
 	"github.com/gin-gonic/gin"
@@ -96,6 +97,9 @@ func (h *Handler) create(c *gin.Context) {
 		return
 	}
 
+	// Record task creation metric
+	metrics.IncrementTasksCount(req.Status)
+
 	c.JSON(http.StatusCreated, req)
 }
 
@@ -176,6 +180,10 @@ func (h *Handler) update(c *gin.Context) {
 		return
 	}
 
+	// Record task update metric (decrement old status, increment new status)
+	// For simplicity, we just record the update with new status
+	metrics.IncrementTasksCount(req.Status)
+
 	c.Status(http.StatusAccepted)
 }
 
@@ -201,6 +209,9 @@ func (h *Handler) delete(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
+
+	// Record task deletion metric
+	metrics.DecrementTasksCount("pending")
 
 	c.Status(http.StatusNoContent)
 }

@@ -3,8 +3,11 @@ package http
 import (
 	_ "task-manager/docs"
 
+	"task-manager/internal/observability/middleware"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -17,6 +20,9 @@ type TaskHandlerRegister interface {
 func NewRouter(taskHandler TaskHandlerRegister) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Recovery())
+
+	// Add metrics middleware
+	r.Use(middleware.MetricsMiddleware())
 
 	// Configure CORS middleware
 	r.Use(cors.New(cors.Config{
@@ -32,6 +38,9 @@ func NewRouter(taskHandler TaskHandlerRegister) *gin.Engine {
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "OK"})
 	})
+
+	// Metrics endpoint
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// Swagger documentation endpoints
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
