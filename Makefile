@@ -68,6 +68,3 @@ coverage:
 
 help:
 	@echo "init | run | stop | refresh_db | logs | db_bash | redis_bash | app_bash | swagger | migrate | migrate_down | seed | test | coverage"
-
-help:
-	@echo "init | run | stop | refresh_db | logs | db_bash | redis_bash | app_bash | swagger"
