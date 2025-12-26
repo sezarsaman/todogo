@@ -19,16 +19,16 @@ func NewPostgres(conn *pgx.Conn) *PostgresRepository {
 func (r *PostgresRepository) Create(ctx context.Context, task *model.Task) error {
 	return r.conn.QueryRow(
 		ctx,
-		`insert into tasks (title, status, assignee) values ($1,$2,$3)
+		`insert into tasks (title, description, status, assignee) values ($1,$2,$3,$4)
 		 returning id, created_at, updated_at`,
-		task.Title, task.Status, task.Assignee,
+		task.Title, task.Description, task.Status, task.Assignee,
 	).Scan(&task.ID, &task.CreatedAt, &task.UpdatedAt)
 }
 
 func (r *PostgresRepository) GetByID(ctx context.Context, id int64) (*model.Task, error) {
 	row := r.conn.QueryRow(
 		ctx,
-		`select id,title,status,assignee,created_at,updated_at
+		`select id,title,description,status,assignee,created_at,updated_at
 		 from tasks where id=$1`, id,
 	)
 
@@ -51,7 +51,7 @@ func (r *PostgresRepository) GetByID(ctx context.Context, id int64) (*model.Task
 func (r *PostgresRepository) List(ctx context.Context) ([]model.Task, error) {
 	rows, err := r.conn.Query(
 		ctx,
-		`select id,title,status,assignee,created_at,updated_at from tasks`,
+		`select id,title,description,status,assignee,created_at,updated_at from tasks`,
 	)
 	if err != nil {
 		return nil, err
@@ -80,9 +80,9 @@ func (r *PostgresRepository) List(ctx context.Context) ([]model.Task, error) {
 func (r *PostgresRepository) Update(ctx context.Context, task *model.Task) error {
 	_, err := r.conn.Exec(
 		ctx,
-		`update tasks set title=$1,status=$2,assignee=$3,updated_at=now()
-		 where id=$4`,
-		task.Title, task.Status, task.Assignee, task.ID,
+		`update tasks set title=$1,description=$2,status=$3,assignee=$4,updated_at=now()
+		 where id=$5`,
+		task.Title, task.Description, task.Status, task.Assignee, task.ID,
 	)
 	return err
 }

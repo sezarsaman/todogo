@@ -1,49 +1,62 @@
-APP_CONTAINER=task_manager_app
-DB_CONTAINER=task_manager_postgres
-REDIS_CONTAINER=task_manager_redis
 
-COMPOSE=docker compose
+include .env.example
+export $(shell sed 's/=.*//' .env.example)
+
 ENV_FILE=.env
+COMPOSE=docker compose --env-file $(ENV_FILE)
 
-.PHONY: help init run stop logs refresh_db db_bash redis_bash app_bash swagger
+.PHONY: init run stop refresh-db logs db_bash redis_bash app_bash swagger migrate migrate_down seed help set-env
 
-help:
-	@echo "Available commands:"
-	@echo "  make init         Build images, start containers"
-	@echo "  make run          Start containers"
-	@echo "  make stop         Stop containers"
-	@echo "  make logs         Show logs"
-	@echo "  make refresh_db   Recreate database"
-	@echo "  make db_bash      Enter postgres container"
-	@echo "  make redis_bash   Enter redis container"
-	@echo "  make app_bash     Enter app container"
-	@echo "  make swagger      Rebuild swagger"
+set-env:
+	@if [ ! -f .env ]; then cp .env.example .env; else echo ".env already exists"; fi
 
 init:
-	$(COMPOSE) --env-file $(ENV_FILE) up -d --build
+	$(MAKE) set-env
+	$(COMPOSE) build --no-cache
+	$(COMPOSE) up -d postgres redis
+	$(COMPOSE) up -d app
+	$(MAKE) migrate
+	$(MAKE) seed
+	
+	@echo "Initialization complete."
+	@echo "Everything works! You can now run 'make logs' to see the application logs."
+	@echo "Use 'make help' to see available commands."
+	@echo "Happy coding!"
 
 run:
-	$(COMPOSE) --env-file $(ENV_FILE) up -d
+	$(COMPOSE) up -d
 
 stop:
-	$(COMPOSE) --env-file $(ENV_FILE) down
+	$(COMPOSE) down
+
+refresh_db:
+	$(MAKE) migrate_down
+	$(MAKE) migrate
+	$(MAKE) seed
 
 logs:
 	$(COMPOSE) logs -f
 
-refresh_db:
-	$(COMPOSE) stop postgres
-	$(COMPOSE) rm -f postgres
-	$(COMPOSE) up -d postgres
-
 db_bash:
-	docker exec -it $(DB_CONTAINER) sh
+	$(COMPOSE) exec postgres psql -U "$(DB_USER)" -d "$(DB_NAME)"
 
 redis_bash:
-	docker exec -it $(REDIS_CONTAINER) sh
+	$(COMPOSE) exec redis redis-cli
 
 app_bash:
-	docker exec -it $(APP_CONTAINER) sh
+	$(COMPOSE) exec app sh
 
 swagger:
-	@echo "Swagger will be generated in next phases"
+	swag init -g cmd/api/main.go -o docs/swagger
+
+migrate:
+	$(COMPOSE) exec app migrate -path /app/migrations -database "$(DATABASE_URL)" up
+
+migrate_down:
+	$(COMPOSE) exec app migrate -path /app/migrations -database "$(DATABASE_URL)" down
+
+seed:
+	$(COMPOSE) exec app /app/seed
+
+help:
+	@echo "init | run | stop | refresh_db | logs | db_bash | redis_bash | app_bash | swagger"
