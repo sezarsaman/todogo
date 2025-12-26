@@ -5,7 +5,7 @@ export $(shell sed 's/=.*//' .env.example)
 ENV_FILE=.env
 COMPOSE=docker compose --env-file $(ENV_FILE)
 
-.PHONY: init run stop refresh-db logs db_bash redis_bash app_bash swagger migrate migrate_down seed help set-env
+.PHONY: init run stop refresh-db logs db_bash redis_bash app_bash swagger migrate migrate_down seed help set-env test coverage
 
 set-env:
 	@if [ ! -f .env ]; then cp .env.example .env; else echo ".env already exists"; fi
@@ -57,6 +57,17 @@ migrate_down:
 
 seed:
 	$(COMPOSE) exec app /app/seed
+
+test:
+	go test -v ./internal/...
+
+coverage:
+	go test ./internal/... -coverprofile=/tmp/coverage.out
+	go tool cover -func=/tmp/coverage.out | grep total
+	@echo "For HTML report, run: go tool cover -html=/tmp/coverage.out"
+
+help:
+	@echo "init | run | stop | refresh_db | logs | db_bash | redis_bash | app_bash | swagger | migrate | migrate_down | seed | test | coverage"
 
 help:
 	@echo "init | run | stop | refresh_db | logs | db_bash | redis_bash | app_bash | swagger"

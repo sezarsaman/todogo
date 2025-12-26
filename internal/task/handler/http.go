@@ -1,22 +1,31 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"task-manager/internal/task/model"
-	"task-manager/internal/task/service"
 
 	"github.com/gin-gonic/gin"
 )
 
-type Handler struct {
-	service *service.Service
+// TaskService defines the interface for task service operations
+type TaskService interface {
+	Get(ctx context.Context, id int64) (*model.Task, error)
+	List(ctx context.Context) ([]model.Task, error)
+	Create(ctx context.Context, task *model.Task) error
+	Update(ctx context.Context, task *model.Task) error
+	Delete(ctx context.Context, id int64) error
 }
 
-func New(service *service.Service) *Handler {
-	return &Handler{service: service}
+type Handler struct {
+	service TaskService
+}
+
+func New(svc TaskService) *Handler {
+	return &Handler{service: svc}
 }
 
 func (h *Handler) Register(r *gin.Engine) {
@@ -57,7 +66,7 @@ func (h *Handler) create(c *gin.Context) {
 func (h *Handler) list(c *gin.Context) {
 	tasks, err := h.service.List(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Status(http.StatusInternalServerError)
 		return
 	}
 	c.JSON(http.StatusOK, tasks)
